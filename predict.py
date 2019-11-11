@@ -52,15 +52,15 @@ def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
     model = Sequential()
     model.add(LSTM(
-        512,
+        256,
         input_shape=(network_input.shape[1], network_input.shape[2]),
         return_sequences=True
     ))
     model.add(Dropout(0.3))
-    model.add(LSTM(512, return_sequences=True))
+    model.add(LSTM(256, return_sequences=True))
     model.add(Dropout(0.3))
-    model.add(LSTM(512))
-    model.add(Dense(256))
+    model.add(LSTM(256))
+    model.add(Dense(128))
     model.add(Dropout(0.3))
     model.add(Dense(n_vocab))
     model.add(Activation('softmax'))
@@ -81,8 +81,8 @@ def generate_notes(model, network_input, pitchnames, n_vocab):
     pattern = network_input[start]
     prediction_output = []
 
-    # generate 500 notes
-    for note_index in range(500):
+    # generate 100 notes
+    for note_index in range(128):
         prediction_input = numpy.reshape(pattern, (1, len(pattern), 1))
         prediction_input = prediction_input / float(n_vocab)
 
@@ -118,7 +118,7 @@ def create_midi(prediction_output):
             output_notes.append(new_chord)
         # pattern is a note
         else:
-            new_note = note.Note(pattern)
+            new_note = note.Note(pattern, quarterLength=0.5)
             new_note.offset = offset
             new_note.storedInstrument = instrument.Piano()
             output_notes.append(new_note)

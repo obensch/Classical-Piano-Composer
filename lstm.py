@@ -29,7 +29,7 @@ def get_notes():
     """ Get all the notes and chords from the midi files in the ./midi_songs directory """
     notes = []
 
-    for file in glob.glob("midi_songs/*.mid"):
+    for file in glob.glob("4Chord/*.mid"):
         midi = converter.parse(file)
 
         print("Parsing %s" % file)
@@ -55,7 +55,7 @@ def get_notes():
 
 def prepare_sequences(notes, n_vocab):
     """ Prepare the sequences used by the Neural Network """
-    sequence_length = 100
+    sequence_length = 60
 
     # get all pitch names
     pitchnames = sorted(set(item for item in notes))
@@ -88,15 +88,15 @@ def create_network(network_input, n_vocab):
     """ create the structure of the neural network """
     model = Sequential()
     model.add(LSTM(
-        512,
+        256,
         input_shape=(network_input.shape[1], network_input.shape[2]),
         return_sequences=True
     ))
     model.add(Dropout(0.3))
-    model.add(LSTM(512, return_sequences=True))
+    model.add(LSTM(256, return_sequences=True))
     model.add(Dropout(0.3))
-    model.add(LSTM(512))
-    model.add(Dense(256))
+    model.add(LSTM(256))
+    model.add(Dense(128))
     model.add(Dropout(0.3))
     model.add(Dense(n_vocab))
     model.add(Activation('softmax'))
@@ -116,7 +116,8 @@ def train(model, network_input, network_output):
     )
     callbacks_list = [checkpoint]
 
-    model.fit(network_input, network_output, epochs=200, batch_size=64, callbacks=callbacks_list)
+    model.fit(network_input, network_output, epochs=500, batch_size=60, callbacks=callbacks_list)
+    #model.save(filepath)
 
 if __name__ == '__main__':
     train_network()
