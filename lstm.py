@@ -15,10 +15,14 @@ from keras.callbacks import ModelCheckpoint
 def train_network():
     """ Train a Neural Network to generate music """
     notes = get_notes()
-
+    print(notes)
+    znumber = notes.count("Z")
+    print(znumber)
+    print(len(notes))
+    
     # get amount of pitch names
     n_vocab = len(set(notes))
-
+    
     network_input, network_output = prepare_sequences(notes, n_vocab)
 
     model = create_network(network_input, n_vocab)
@@ -36,6 +40,8 @@ def get_notes():
 
         notes_to_parse = None
 
+        currentsong = ["Z" for x in range(64)]
+        
         try: # file has instrument parts
             s2 = instrument.partitionByInstrument(midi)
             notes_to_parse = s2.parts[0].recurse() 
@@ -44,9 +50,17 @@ def get_notes():
 
         for element in notes_to_parse:
             if isinstance(element, note.Note):
-                notes.append(str(element.pitch))
-            elif isinstance(element, chord.Chord):
-                notes.append('.'.join(str(n) for n in element.normalOrder))
+                #notes.append(str(element.pitch))
+                offset = element.offset*4
+                currentsong[int(offset)] = str(element.pitch)
+                if(int(offset+1) < 64):
+                    currentsong[int(offset+1)] = str(element.pitch)
+                if(int(offset+2) < 64):
+                    currentsong[int(offset+2)] = str(element.pitch)
+                if(int(offset+3) < 64):
+                    currentsong[int(offset+3)] = str(element.pitch)
+
+        notes.extend(currentsong)
 
     with open('data/notes', 'wb') as filepath:
         pickle.dump(notes, filepath)
@@ -55,7 +69,7 @@ def get_notes():
 
 def prepare_sequences(notes, n_vocab):
     """ Prepare the sequences used by the Neural Network """
-    sequence_length = 60
+    sequence_length = 128
 
     # get all pitch names
     pitchnames = sorted(set(item for item in notes))
@@ -72,14 +86,14 @@ def prepare_sequences(notes, n_vocab):
         sequence_out = notes[i + sequence_length]
         network_input.append([note_to_int[char] for char in sequence_in])
         network_output.append(note_to_int[sequence_out])
-
+    
     n_patterns = len(network_input)
 
     # reshape the input into a format compatible with LSTM layers
     network_input = numpy.reshape(network_input, (n_patterns, sequence_length, 1))
+    
     # normalize input
     network_input = network_input / float(n_vocab)
-
     network_output = np_utils.to_categorical(network_output)
 
     return (network_input, network_output)
@@ -92,7 +106,7 @@ def create_network(network_input, n_vocab):
         input_shape=(network_input.shape[1], network_input.shape[2]),
         return_sequences=True
     ))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.2))
     model.add(LSTM(256, return_sequences=True))
     model.add(Dropout(0.3))
     model.add(LSTM(256))
@@ -101,6 +115,7 @@ def create_network(network_input, n_vocab):
     model.add(Dense(n_vocab))
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+    #model.load_weights('weights.hdf5')
 
     return model
 
@@ -116,8 +131,7 @@ def train(model, network_input, network_output):
     )
     callbacks_list = [checkpoint]
 
-    model.fit(network_input, network_output, epochs=500, batch_size=60, callbacks=callbacks_list)
-    #model.save(filepath)
+    model.fit(network_input, network_output, epochs=1500, batch_size=32, callbacks=callbacks_list)
 
 if __name__ == '__main__':
     train_network()
