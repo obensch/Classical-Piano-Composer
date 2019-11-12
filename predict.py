@@ -30,7 +30,7 @@ def prepare_sequences(notes, pitchnames, n_vocab):
     # map between notes and integers and back
     note_to_int = dict((note, number) for number, note in enumerate(pitchnames))
 
-    sequence_length = 128
+    sequence_length = 100
     network_input = []
     output = []
     for i in range(0, len(notes) - sequence_length, 1):
@@ -124,10 +124,6 @@ def create_midi(prediction_output):
 
             new_note.duration = duration.Duration(notelength)
             output_notes.append(new_note)
-            #new_note = note.Note(prediction_output[x], quarterLength=0.25)
-            #new_note.offset = offset
-            #new_note.storedInstrument = instrument.Piano()
-            #output_notes.append(new_note)
 
         # increase offset each iteration so that notes do not stack
         x += 1
